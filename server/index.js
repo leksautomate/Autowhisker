@@ -36,8 +36,8 @@ app.use('/output', express.static(outputDir));
 function convertCookieToString(cookieInput) {
     // If it's already a string (header format), return as-is
     if (typeof cookieInput === 'string') {
-        // Check if it looks like JSON
         const trimmed = cookieInput.trim();
+        // Check if it looks like JSON
         if (trimmed.startsWith('[')) {
             try {
                 const parsed = JSON.parse(trimmed);
@@ -45,7 +45,8 @@ function convertCookieToString(cookieInput) {
                     return parsed.map(c => `${c.name}=${c.value}`).join('; ');
                 }
             } catch (e) {
-                // Not valid JSON, assume it's already a cookie string
+                console.warn('[Server] Cookie string looked like JSON but failed to parse:', e.message);
+                // Return original string as fallback
                 return cookieInput;
             }
         }
@@ -57,7 +58,7 @@ function convertCookieToString(cookieInput) {
         return cookieInput.map(c => `${c.name}=${c.value}`).join('; ');
     }
 
-    return cookieInput;
+    return cookieInput || '';
 }
 
 // API Endpoint to Generate Image
@@ -178,7 +179,20 @@ app.post('/api/validate-cookie', async (req, res) => {
 
     const cookieString = convertCookieToString(cookie);
 
+    // Check for critical Google cookies
+    if (!cookieString.includes('__Secure-1PSID') && !cookieString.includes('__Secure-3PSID')) {
+        console.warn('[Server] Missing Critical Cookies. Present keys:',
+            cookieString.split(';').map(p => p.split('=')[0].trim())
+        );
+        return res.json({
+            valid: false,
+            status: 'Incomplete Cookie',
+            message: 'Missing required Google auth cookies (like __Secure-1PSID). Please assume the entire cookie list is copied.'
+        });
+    }
+
     try {
+        console.log('[Server] Validating cookie with session check...');
         // Try to create a Whisk instance and a project to validate the cookie
         const whisk = new Whisk(cookieString);
         const project = await whisk.newProject("Session Check");

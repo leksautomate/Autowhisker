@@ -2,7 +2,7 @@
 
 A powerful local web application designed to automate image generation using the Google Whisk API. This tool allows you to batch process prompts, manage generation queues, and organize your AI-generated artwork efficiently.
 
-![App Screenshot](public/image.png)
+![App Screenshot](https://github.com/leksautomate/Autowhisker/blob/main/public/image.png)
 
 ## 🚀 Key Features
 
